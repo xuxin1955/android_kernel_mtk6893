@@ -22,6 +22,7 @@ static void check_conf(struct menu *menu);
 
 enum input_mode {
 	oldaskconfig,
+	syncconfig,
 	oldconfig,
 	allnoconfig,
 	allyesconfig,
@@ -98,6 +99,7 @@ static int conf_askvalue(struct symbol *sym, const char *def)
 
 	switch (input_mode) {
 	case oldconfig:
+	case syncconfig:
 		if (sym_has_value(sym)) {
 			printf("%s\n", def);
 			return 0;
@@ -290,6 +292,7 @@ static int conf_choice(struct menu *menu)
 		printf("[1-%d?]: ", cnt);
 		switch (input_mode) {
 		case oldconfig:
+		case syncconfig:
 			if (!is_new) {
 				cnt = def;
 				printf("%d\n", cnt);
@@ -447,6 +450,7 @@ static void check_conf(struct menu *menu)
 static struct option long_opts[] = {
 	{"oldaskconfig",    no_argument,       NULL, oldaskconfig},
 	{"oldconfig",       no_argument,       NULL, oldconfig},
+	{"syncconfig",      no_argument,       NULL, syncconfig},
 	{"defconfig",       optional_argument, NULL, defconfig},
 	{"savedefconfig",   required_argument, NULL, savedefconfig},
 	{"allnoconfig",     no_argument,       NULL, allnoconfig},
@@ -473,6 +477,8 @@ static void conf_usage(const char *progname)
 	printf("  --listnewconfig         List new options\n");
 	printf("  --oldaskconfig          Start a new configuration using a line-oriented program\n");
 	printf("  --oldconfig             Update a configuration using a provided .config as base\n");
+	printf("  --syncconfig            Similar to oldconfig but generates configuration in\n"
+	       "                          include/{generated/,config/}\n");
 	printf("  --olddefconfig          Same as oldconfig but sets new symbols to their default value\n");
 	printf("  --oldnoconfig           An alias of olddefconfig\n");
 	printf("  --defconfig <file>      New config with default defined in <file>\n");
@@ -501,10 +507,14 @@ int main(int ac, char **av)
 		}
 		input_mode = (enum input_mode)opt;
 		switch (opt) {
+		case syncconfig:
 			/*
 			 * syncconfig is invoked during the build stage.
 			 * Suppress distracting "configuration written to ..."
 			 */
+			conf_set_message_callback(NULL);
+			sync_kconfig = 1;
+			break;
 		case defconfig:
 		case savedefconfig:
 			defconfig_file = optarg;
@@ -584,6 +594,7 @@ int main(int ac, char **av)
 		}
 		break;
 	case savedefconfig:
+	case syncconfig:
 	case oldaskconfig:
 	case oldconfig:
 	case listnewconfig:
@@ -668,6 +679,7 @@ int main(int ac, char **av)
 		/* fall through */
 	case oldconfig:
 	case listnewconfig:
+	case syncconfig:
 		/* Update until a loop caused no more changes */
 		do {
 			conf_cnt = 0;
