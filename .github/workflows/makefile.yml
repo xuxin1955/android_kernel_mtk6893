@@ -1,4 +1,4 @@
-name: 编译Realme-GTNeo系列-安卓13-通用mt6893机型内核
+name: 编译Realme-GTNeo系列-安卓13-mt6893机型内核
                 支持ksu docker lxc
 
 on:
